@@ -238,16 +238,17 @@ def main() -> None: # pragma: no cover
     # an uracile that we would find on the expressed RNA
     #start_codons = ['TTG', 'CTG', 'ATT', 'ATG', 'GTG']
     #stop_codons = ['TAA', 'TAG', 'TGA']
+    args = get_arguments()
     start_regex = re.compile('AT[TG]|[ATCG]TG')
     stop_regex = re.compile('TA[GA]|TGA') 
+    sequence = read_fasta(args.genome_file)
+ 
     # Shine AGGAGGUAA
     #AGGA ou GGAGG 
     shine_regex = re.compile('A?G?GAGG|GGAG|GG.{1}GG')
     # Arguments
-    args = get_arguments()
 
     # Let us do magic in 5' to 3'
-    sequence = read_fasta(args.genome_file)
     probable_genes = predict_genes(sequence, start_regex, stop_regex, shine_regex, 
                   args.min_gene_len, args.max_shine_dalgarno_distance, args.min_gap)
     
@@ -255,15 +256,17 @@ def main() -> None: # pragma: no cover
     sequence_rc = reverse_complement(sequence)
     probable_genes_comp = predict_genes(sequence_rc, start_regex, stop_regex, shine_regex, 
                   args.min_gene_len, args.max_shine_dalgarno_distance, args.min_gap)
+    
+    probable_genes_comp2 = []
+    for i in range(len(probable_genes)):
+        pos1 = len(sequence)-probable_genes_comp[i][1]+1
+        pos2 = len(sequence)-probable_genes_comp[i][0]+1
+        probable_genes_comp2.append([pos1, pos2])
 
-    for gene in probable_genes_comp:
-        gene.reverse()
-        gene[0] = len(sequence_rc) - gene[0] +1
-        gene[1] = len(sequence_rc) - gene[1] +1 
-
+  
     # Call to output functions
-    write_genes_pos(args.predicted_genes_file, probable_genes)
-    write_genes(args.fasta_file, sequence, probable_genes, sequence_rc, probable_genes_comp)
+    write_genes_pos(args.predicted_genes_file, probable_genes + probable_genes_comp2)
+    write_genes(args.fasta_file, sequence, probable_genes, sequence_rc, probable_genes_comp2)
     
 
 
